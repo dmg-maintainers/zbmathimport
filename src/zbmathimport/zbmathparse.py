@@ -79,10 +79,6 @@ def parse_zblatt_document(
     date = datetime.now(UTC)
     timestamp = date.isoformat("T") # RFC 3339 timestamp.
 
-    # Do not overwrite publication bundle if it already exists.
-    if not overwrite and os.path.isdir(bundle_path):
-        log.warning(f"Skipping creation of {bundle_path} as it already exists. " f"To overwrite, add the `--overwrite` argument.")
-        return
 
     # Create bundle dir.
     log.info(f"Creating folder {bundle_path}")
@@ -102,19 +98,35 @@ def parse_zblatt_document(
 
     # Prepare YAML front matter for Markdown file.
     if not dry_run:
-        from importlib import resources as import_resources
+        if overwrite or not os.path.isdir(bundle_path):
+            from importlib import resources as import_resources
 
-        # Load the Markdown template from within the `templates` folder of the `academic` package
-        template = import_resources.read_text("academic.templates", "publication.md")
+            # Load the Markdown template from within the `templates` folder of the `academic` package
+            template = import_resources.read_text("academic.templates", "publication.md")
 
-        # Remove boilerplate text
-        # template.content = []
-
-        with open(markdown_path, "w") as f:
-            f.write(template)
+            with open(markdown_path, "w") as f:
+                f.write(template)
 
     page = GenerateMarkdown(Path(bundle_path), dry_run=dry_run, compact=compact)
     page.load(Path("index.md"))
+
+    # Decide whether we overwrite the entry.
+    # We will do it if:
+    # - the overwrite option is selected.
+    # - The zbmath datestamp has changed.
+    # - The entry type has changed. 
+    datestamp =  entry['datestamp']
+    default_csl_type = "manuscript"
+    pub_type = PUB_TYPES_ZBLATT_TO_CSL.get(entry["document_type"]["code"], default_csl_type)
+    if not overwrite:
+        overwrite = 'zbmath_date' not in page.yaml or page.yaml['zbmath_date'] == datestamp
+        overwrite = overwrite and ("publication_types" in page.yaml and page.yaml["publication_types"] == pub_type)
+    # Do not overwrite publication bundle if it already exists.
+    if not overwrite:
+        log.warning(f"Skipping creation of {bundle_path} as it already exists. " f"To overwrite, add the `--overwrite` argument.")
+        return
+
+    page.yaml["zbmath_date"] = entry['datestamp']
 
     page.yaml["title"] = entry["title"]["title"]
 
@@ -138,8 +150,6 @@ def parse_zblatt_document(
 
 
     # Convert Bibtex publication type to the universal CSL standard, defaulting to `manuscript`
-    default_csl_type = "manuscript"
-    pub_type = PUB_TYPES_ZBLATT_TO_CSL.get(entry["document_type"]["code"], default_csl_type)
     page.yaml["publication_types"] = [pub_type]
 
     page.yaml["abstract"] = ""
