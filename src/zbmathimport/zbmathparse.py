@@ -21,7 +21,6 @@ def import_zblatt_file(
     pub_dir=os.path.join("content", "publication"),
     featured=False,
     overwrite=False,
-    normalize=False,
     compact=False,
     dry_run=False,
 ):
@@ -40,7 +39,7 @@ def import_zblatt_file(
         root = json.load(fp) 
         json_database = root["result"]
         import_zblatt(json_database, featured=featured, overwrite=overwrite,
-                      normalize=normalize, compact=compact, dry_run=dry_run)
+                      compact=compact, dry_run=dry_run)
 
 
 def import_zblatt(
@@ -48,7 +47,6 @@ def import_zblatt(
     pub_dir=os.path.join("content", "publication"),
     featured=False,
     overwrite=False,
-    normalize=False,
     compact=False,
     dry_run=False,
 ):
@@ -58,7 +56,6 @@ def import_zblatt(
             pub_dir=pub_dir,
             featured=featured,
             overwrite=overwrite,
-            normalize=normalize,
             compact=compact,
             dry_run=dry_run,
         )
@@ -69,7 +66,6 @@ def parse_zblatt_document(
     pub_dir=os.path.join("content", "publication"),
     featured=False,
     overwrite=False,
-    normalize=False,
     compact=False,
     dry_run=False,
 ):
@@ -110,6 +106,9 @@ def parse_zblatt_document(
 
         # Load the Markdown template from within the `templates` folder of the `academic` package
         template = import_resources.read_text("academic.templates", "publication.md")
+
+        # Remove boilerplate text
+        # template.content = []
 
         with open(markdown_path, "w") as f:
             f.write(template)

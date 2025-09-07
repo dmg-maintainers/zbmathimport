@@ -25,12 +25,16 @@ def main():
     parser.add_argument('-c', '--config', default="authors.yaml", help="Configuration file containing the list of authors to query")      # option that takes a value
     parser.add_argument('-o', '--output', default="content/publication/", help="Output path (e.g. `content/publication/`)")      # option that takes a value
     parser.add_argument('--compact', action=argparse.BooleanOptionalAction, help="write compact markdown files")      # option that takes a value
+    parser.add_argument('--dry_run', action=argparse.BooleanOptionalAction, help="Test the command, but do not actually produce the files.")      # option that takes a value
+    parser.add_argument('--overwrite', action=argparse.BooleanOptionalAction, help="overwrite existing files")      # option that takes a value
 
     values, unknown = parser.parse_known_args(sys.argv)
     arguments = vars(values)
     zbmath_ids = populate_ids(arguments['config'])
     pub_dir = arguments['output']
     compact = arguments['compact']
+    overwrite = arguments['overwrite']
+    dry_run = arguments['dry_run']
 
     today = date.today()
     year = str(today.year)
@@ -49,7 +53,7 @@ def main():
     r = requests.get(url)
     if r.status_code == 200:
         root = json.loads(r.text)
-        import_zblatt(root["result"], pub_dir=pub_dir)
+        import_zblatt(root["result"], pub_dir=pub_dir, compact=compact, overwrite=overwrite, dry_run=dry_run)
     else:
         print(r)
 
