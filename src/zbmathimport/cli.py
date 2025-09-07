@@ -24,11 +24,13 @@ def main():
     parser.add_argument('progname')
     parser.add_argument('-c', '--config', default="authors.yaml", help="Configuration file containing the list of authors to query")      # option that takes a value
     parser.add_argument('-o', '--output', default="content/publication/", help="Output path (e.g. `content/publication/`)")      # option that takes a value
+    parser.add_argument('--compact', action=argparse.BooleanOptionalAction, help="write compact markdown files")      # option that takes a value
 
     values, unknown = parser.parse_known_args(sys.argv)
     arguments = vars(values)
     zbmath_ids = populate_ids(arguments['config'])
     pub_dir = arguments['output']
+    compact = arguments['compact']
 
     today = date.today()
     year = str(today.year)
