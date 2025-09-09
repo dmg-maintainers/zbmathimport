@@ -97,8 +97,8 @@ def parse_zblatt_document(
     default_csl_type = "manuscript"
     pub_type = PUB_TYPES_ZBLATT_TO_CSL.get(entry["document_type"]["code"], default_csl_type)
     if not overwrite:
-        overwrite = 'zbmath_date' not in page.yaml or page.yaml['zbmath_date'] == datestamp
-        overwrite = overwrite and ("publication_types" in page.yaml and page.yaml["publication_types"] == pub_type)
+        overwrite = 'zbmath_date' not in page.yaml or page.yaml['zbmath_date'] != datestamp
+        overwrite = overwrite or ("publication_types" in page.yaml and page.yaml["publication_types"] == pub_type)
     # Do not overwrite publication bundle if it already exists.
     if not overwrite:
         log.warning(f"Skipping creation of {bundle_path} as it already exists. " f"To overwrite, add the `--overwrite` argument.")
