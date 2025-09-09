@@ -68,8 +68,6 @@ def parse_zblatt_document(
     ##         f.write(writer.write(db))
 
     # Prepare YAML front matter for Markdown file.
-    print(bundle_path)
-    print(os.path.isdir(bundle_path))
     if not dry_run:
         if overwrite or not os.path.isdir(bundle_path):
             from importlib import resources as import_resources
