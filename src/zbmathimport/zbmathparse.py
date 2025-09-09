@@ -56,11 +56,6 @@ def parse_zblatt_document(
     timestamp = date.isoformat("T") # RFC 3339 timestamp.
 
 
-    # Create bundle dir.
-    log.info(f"Creating folder {bundle_path}")
-    if not dry_run:
-        Path(bundle_path).mkdir(parents=True, exist_ok=True)
-
     # TODO
     ## # Save citation file.
     ## cite_path = os.path.join(bundle_path, "cite.bib")
@@ -73,9 +68,16 @@ def parse_zblatt_document(
     ##         f.write(writer.write(db))
 
     # Prepare YAML front matter for Markdown file.
+    print(bundle_path)
+    print(os.path.isdir(bundle_path))
     if not dry_run:
         if overwrite or not os.path.isdir(bundle_path):
             from importlib import resources as import_resources
+            # Create bundle dir.
+            log.info(f"Creating folder {bundle_path}")
+            if not dry_run:
+                Path(bundle_path).mkdir(parents=True, exist_ok=True)
+
 
             # Load the Markdown template from within the `templates` folder of the `academic` package
             template = import_resources.read_text("academic.templates", "publication.md")
