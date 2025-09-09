@@ -42,7 +42,7 @@ def main():
     if today.month < 2:
         year = str(today.year - 1) + "-" + year
 
-    authorquery = 'ia:'+' | ia:'.join(zbmath_ids)
+    authorquery = 'ia:'+' | ia:'.join(zbmath_ids.keys())
     datequery = f'py:{year}'
     query = f'({authorquery}) %26 {datequery}'
     #url = f"https://api.zbmath.org/v1/document/_search"
@@ -53,7 +53,7 @@ def main():
     r = requests.get(url)
     if r.status_code == 200:
         root = json.loads(r.text)
-        import_zblatt(root["result"], pub_dir=pub_dir, compact=compact, overwrite=overwrite, dry_run=dry_run)
+        import_zblatt(root["result"], author_ids=zbmath_ids, pub_dir=pub_dir, compact=compact, overwrite=overwrite, dry_run=dry_run)
     else:
         print(r)
 

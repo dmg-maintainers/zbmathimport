@@ -15,35 +15,9 @@ PUB_TYPES_ZBLATT_TO_CSL = {
   's': 'paper-conference',  # Conference Paper
 }
 
-
-def import_zblatt_file(
-    fname,
-    pub_dir=os.path.join("content", "publication"),
-    featured=False,
-    overwrite=False,
-    compact=False,
-    dry_run=False,
-):
-    """Import publications from BibTeX file"""
-    from academic.cli import log
-    from academic.utils import AcademicError
-
-    # Check BibTeX file exists.
-    if not Path(fname).is_file():
-        err = "Please check the path to your json file and re-run"
-        log.error(err)
-        raise AcademicError(err)
-
-    # Load json file for parsing.
-    with open(fname, "r", encoding="utf-8") as fp:
-        root = json.load(fp) 
-        json_database = root["result"]
-        import_zblatt(json_database, featured=featured, overwrite=overwrite,
-                      compact=compact, dry_run=dry_run)
-
-
 def import_zblatt(
     json_database,
+    author_ids={},
     pub_dir=os.path.join("content", "publication"),
     featured=False,
     overwrite=False,
@@ -53,6 +27,7 @@ def import_zblatt(
     for entry in json_database:
       parse_zblatt_document(
             entry,
+            author_ids=author_ids,
             pub_dir=pub_dir,
             featured=featured,
             overwrite=overwrite,
@@ -63,6 +38,7 @@ def import_zblatt(
 
 def parse_zblatt_document(
     entry,
+    author_ids={},
     pub_dir=os.path.join("content", "publication"),
     featured=False,
     overwrite=False,
@@ -142,8 +118,8 @@ def parse_zblatt_document(
     page.yaml["date"] = f"{year}-{month}-{day}"
     page.yaml["publishDate"] = timestamp # We could potentially use zblatt's datestamp
 
-    authors = None
-    authors = [author["name"] for author in  entry['contributors']['authors']]
+    print(author_ids)
+    authors = [author_ids.get(author["codes"][0], author["name"]) for author in  entry['contributors']['authors']]
     page.yaml["authors"] = authors
     #elif "editor" in entry:
     #    authors = entry["editor"]
