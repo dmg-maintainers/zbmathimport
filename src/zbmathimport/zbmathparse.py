@@ -118,7 +118,6 @@ def parse_zblatt_document(
     page.yaml["date"] = f"{year}-{month}-{day}"
     page.yaml["publishDate"] = timestamp # We could potentially use zblatt's datestamp
 
-    print(author_ids)
     authors = [author_ids.get(author["codes"][0], author["name"]) for author in  entry['contributors']['authors']]
     page.yaml["authors"] = authors
     #elif "editor" in entry:
