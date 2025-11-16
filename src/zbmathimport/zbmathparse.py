@@ -2,8 +2,10 @@ import os
 from datetime import datetime, UTC
 from pathlib import Path
 import json
-import arxiv2bib
 from doi2bib.crossref import get_bib_from_doi
+import bibtexparser
+from bibtexparser.bibdatabase import BibDatabase
+from bibtexparser.bwriter import BibTexWriter
 
 
 from academic.generate_markdown import GenerateMarkdown
@@ -20,9 +22,12 @@ PUB_TYPES_ZBLATT_TO_CSL = {
 def save_bib_from_doi(bundle_path, doi, dry_run=False):
     """Save citation file from a given doi."""
     cite_path = os.path.join(bundle_path, "cite.bib")
-    success, db = get_bib_from_doi(doi)
+    success, bib = get_bib_from_doi(doi)
     if success and not dry_run:
         with open(cite_path, "w", encoding="utf-8") as f:
+            bibtex = bibtexparser.loads(bib)
+            writer = BibTexWriter()
+            db = writer.write(bibtex)
             f.write(db)
             return True
     return False
