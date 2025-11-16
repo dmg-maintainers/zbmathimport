@@ -1,8 +1,9 @@
 import os
 from datetime import datetime, UTC
 from pathlib import Path
-
 import json
+import arxiv2bib
+from doi2bib.crossref import get_bib_from_doi
 
 
 from academic.generate_markdown import GenerateMarkdown
@@ -15,25 +16,24 @@ PUB_TYPES_ZBLATT_TO_CSL = {
   's': 'paper-conference',  # Conference Paper
 }
 
-def import_zblatt(
-    json_database,
-    author_ids={},
-    pub_dir=os.path.join("content", "publication"),
-    featured=False,
-    overwrite=False,
-    compact=False,
-    dry_run=False,
-):
-    for entry in json_database:
-      parse_zblatt_document(
-            entry,
-            author_ids=author_ids,
-            pub_dir=pub_dir,
-            featured=featured,
-            overwrite=overwrite,
-            compact=compact,
-            dry_run=dry_run,
-        )
+
+def save_bib_from_doi(bundle_path, doi, dry_run=False):
+    """Save citation file from a given doi."""
+    cite_path = os.path.join(bundle_path, "cite.bib")
+    success, db = get_bib_from_doi(doi)
+    if success and not dry_run:
+        with open(cite_path, "w", encoding="utf-8") as f:
+            f.write(db)
+            return True
+    return False
+
+
+def save_bib_from_arxiv(bundle_path, doi, dry_run=False):
+    """Save citation file from a given arxiv id."""
+    # We don't do anything here, to stay on the safe
+    # side of arxiv's policy towards crawling.
+    # https://info.arxiv.org/help/robots.html
+    return False
 
 
 def parse_zblatt_document(
@@ -54,18 +54,6 @@ def parse_zblatt_document(
     markdown_path = os.path.join(bundle_path, "index.md")
     date = datetime.now(UTC)
     timestamp = date.isoformat("T") # RFC 3339 timestamp.
-
-
-    # TODO
-    ## # Save citation file.
-    ## cite_path = os.path.join(bundle_path, "cite.bib")
-    ## log.info(f"Saving citation to {cite_path}")
-    ## db = BibDatabase()
-    ## db.entries = [entry]
-    ## writer = BibTexWriter()
-    ## if not dry_run:
-    ##     with open(cite_path, "w", encoding="utf-8") as f:
-    ##         f.write(writer.write(db))
 
     # Prepare YAML front matter for Markdown file.
     if not dry_run:
@@ -141,24 +129,22 @@ def parse_zblatt_document(
     publication = ""
     if "title" in source:
       publication = "*" + source['title'] + "*"
-    #if "booktitle" in entry:
-    #    publication = "*" + clean_bibtex_str(entry["booktitle"]) + "*"
-    #elif "journal" in entry:
-    #    publication = "*" + clean_bibtex_str(entry["journal"]) + "*"
-    #elif "publisher" in entry:
-    #    publication = "*" + clean_bibtex_str(entry["publisher"]) + "*"
-    #else:
-    #    publication = ""
     page.yaml["publication"] = publication
 
     page.yaml["tags"] = entry["keywords"]
 
     links = [{"name": "zbmath", "url":entry['zbmath_url'], "id": entry["id"]}]
+    createcitefile = True
     for link in entry["links"]:
       if link["type"] == "doi":
-        page.yaml["doi"] = link["url"]
+        doi = link["url"]
+        page.yaml["doi"] =  doi
+        if save_bib_from_doi(bundle_path, doi, dry_run):
+            createcitefile = False
       else:
         links += [{"name": link["type"], "url": link["url"], "id": link["identifier"]}]
+        if link["type"] == "arxiv" and createcitefile:
+          save_bib_from_arxiv(bundle_path, link["identifier"], dry_run)
     if links:
         page.yaml["links"] = links
 
@@ -172,4 +158,23 @@ def parse_zblatt_document(
     return page
 
 
+def import_zblatt(
+    json_database,
+    author_ids={},
+    pub_dir=os.path.join("content", "publication"),
+    featured=False,
+    overwrite=False,
+    compact=False,
+    dry_run=False,
+):
+    for entry in json_database:
+      parse_zblatt_document(
+            entry,
+            author_ids=author_ids,
+            pub_dir=pub_dir,
+            featured=featured,
+            overwrite=overwrite,
+            compact=compact,
+            dry_run=dry_run,
+        )
 
