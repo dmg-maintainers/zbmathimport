@@ -18,16 +18,23 @@ PUB_TYPES_ZBLATT_TO_CSL = {
   's': 'paper-conference',  # Conference Paper
 }
 
+unavailable_text = "zbMATH Open Web Interface contents unavailable due to conflicting licenses."
 
-def save_bib_from_doi(bundle_path, doi, dry_run=False):
+
+def get_bib_entry(doi):
+    success, bib = get_bib_from_doi(doi)
+    if success:
+        return bibtexparser.loads(bib)
+    return None
+
+
+def save_bib_from_doi(bundle_path, bibentry, dry_run=False):
     """Save citation file from a given doi."""
     cite_path = os.path.join(bundle_path, "cite.bib")
-    success, bib = get_bib_from_doi(doi)
-    if success and not dry_run:
+    if bibentry is not None and not dry_run:
         with open(cite_path, "w", encoding="utf-8") as f:
-            bibtex = bibtexparser.loads(bib)
             writer = BibTexWriter()
-            db = writer.write(bibtex)
+            db = writer.write(bibentry)
             f.write(db)
             return True
     return False
@@ -95,9 +102,22 @@ def parse_zblatt_document(
         log.warning(f"Skipping creation of {bundle_path} as it already exists. " f"To overwrite, add the `--overwrite` argument.")
         return
 
+    doi = [e["url"] for e in entry["links"] if e["type"] == "doi"]
+    if doi:
+        bibtex = get_bib_entry(doi[0])
+    else:
+        bibtex = None
+    if bibtex is not None:
+        if save_bib_from_doi(bundle_path, bibtex, dry_run):
+            createcitefile = False
+        bibtex = bibtex.entries[0]
+
+
     page.yaml["zbmath_date"] = entry['datestamp']
 
     page.yaml["title"] = entry["title"]["title"]
+    if page.yaml["title"] == unavailable_text:
+        page.yaml["title"] = bibtex["title"]
 
     if entry['title'] is not None:
         page.yaml["subtitle"] = entry["title"]["subtitle"]
@@ -112,7 +132,15 @@ def parse_zblatt_document(
     page.yaml["publishDate"] = timestamp # We could potentially use zblatt's datestamp
 
     authors = [author_ids.get(author["codes"][0], author["name"]) for author in  entry['contributors']['authors']]
+    if bibtex:
+        bibtexauthors = bibtex["author"].split("and")
+    else:
+        bibtexauthors = ["Not available" for _ in authors]
+    for i,author in enumerate(authors):
+        if author == unavailable_text:
+            authors[i] = bibtexauthors[i].strip()
     page.yaml["authors"] = authors
+
     #elif "editor" in entry:
     #    authors = entry["editor"]
 
@@ -123,7 +151,7 @@ def parse_zblatt_document(
     page.yaml["abstract"] = ""
     for contribution in  entry['editorial_contributions']:
       if contribution['contribution_type'] == 'summary' and contribution['reviewer']['reviewer_id'] is None:
-        if contribution['text'] != "zbMATH Open Web Interface contents unavailable due to conflicting licenses.":
+        if contribution['text'] != unavailable_text:
           page.yaml["abstract"] = contribution['text' ]
 
     page.yaml["featured"] = featured
@@ -133,10 +161,10 @@ def parse_zblatt_document(
     source = entry['source']['series']
     publication = ""
     if "title" in source:
-      publication = "*" + source['title'] + "*"
+        publication = "*" + source['title'] + "*"
     page.yaml["publication"] = publication
 
-    page.yaml["tags"] = entry["keywords"]
+    page.yaml["tags"] = [e for e in entry["keywords"] if e != unavailable_text]
 
     links = [{"name": "zbmath", "url":entry['zbmath_url'], "id": entry["id"]}]
     createcitefile = True
@@ -144,8 +172,6 @@ def parse_zblatt_document(
       if link["type"] == "doi":
         doi = link["url"]
         page.yaml["doi"] =  doi
-        if save_bib_from_doi(bundle_path, doi, dry_run):
-            createcitefile = False
       else:
         links += [{"name": link["type"], "url": link["url"], "id": link["identifier"]}]
         if link["type"] == "arxiv" and createcitefile:
