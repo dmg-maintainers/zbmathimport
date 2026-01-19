@@ -1,6 +1,8 @@
 import argparse
 from argparse import RawTextHelpFormatter
 import sys
+import os
+import itertools
 
 from zbmathimport.zbmathparse import  import_zblatt
 from datetime import date
@@ -8,11 +10,18 @@ import requests
 import json
 import yaml
 
-def populate_ids(fname):
-    with open(fname,'r') as fp:
-        authors = yaml.safe_load(fp)
 
-    return authors['authors']
+def populate_ids(dirname):
+    authors = dict()
+    for author in os.listdir(dirname):
+        file = "content/authors/"+author+"/_index.md"
+        with open(file, 'r') as fd:
+            lines = itertools.takewhile(lambda x: x != "---\n", fd.readlines()[2:-1])
+            file = yaml.safe_load('\n'.join(lines))
+            if 'zbmath_id' in file:
+                for id in file['zbmath_id']:
+                    authors[id] = author
+    return authors
 
 
 
