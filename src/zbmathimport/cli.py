@@ -31,7 +31,7 @@ def main():
                         description='Import recent publications for a list of authors and store them in markdown files.')
 
     parser.add_argument('progname')
-    parser.add_argument('-c', '--config', default="authors.yaml", help="Configuration file containing the list of authors to query")      # option that takes a value
+    parser.add_argument('-a', '--authors', default="content/authors", help="Folder containing the list of authors")      # option that takes a value
     parser.add_argument('-o', '--output', default="content/publication/", help="Output path (e.g. `content/publication/`)")      # option that takes a value
     parser.add_argument('--compact', action=argparse.BooleanOptionalAction, help="write compact markdown files")      # option that takes a value
     parser.add_argument('--dry_run', action=argparse.BooleanOptionalAction, help="Test the command, but do not actually produce the files.")      # option that takes a value
@@ -39,7 +39,7 @@ def main():
 
     values, unknown = parser.parse_known_args(sys.argv)
     arguments = vars(values)
-    zbmath_ids = populate_ids(arguments['config'])
+    zbmath_ids = populate_ids(arguments['authors'])
     pub_dir = arguments['output']
     compact = arguments['compact']
     overwrite = arguments['overwrite']

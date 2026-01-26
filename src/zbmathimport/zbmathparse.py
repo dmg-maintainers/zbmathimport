@@ -131,7 +131,8 @@ def parse_zblatt_document(
     page.yaml["date"] = f"{year}-{month}-{day}"
     page.yaml["publishDate"] = timestamp # We could potentially use zblatt's datestamp
 
-    authors = [author_ids.get(author["codes"][0], author["name"]) for author in  entry['contributors']['authors']]
+    authors = [author_ids[author["codes"][0]] if len(author["codes"]) > 0 and author["codes"][0] in author_ids else author["name"] for author in  entry['contributors']['authors']]
+
     if bibtex:
         bibtexauthors = bibtex["author"].split("and")
     else:
