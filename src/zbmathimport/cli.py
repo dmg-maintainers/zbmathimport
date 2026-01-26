@@ -54,9 +54,6 @@ def main():
     authorquery = 'ia:'+' | ia:'.join(zbmath_ids.keys())
     datequery = f'py:{year}'
     query = f'({authorquery}) %26 {datequery}'
-    #url = f"https://api.zbmath.org/v1/document/_search"
-    #r = requests.get(url, data={'search_string': query})
-
 
     url = f"https://api.zbmath.org/v1/document/_search?search_string={query}"
     r = requests.get(url)
@@ -64,5 +61,7 @@ def main():
         root = json.loads(r.text)
         import_zblatt(root["result"], author_ids=zbmath_ids, pub_dir=pub_dir, compact=compact, overwrite=overwrite, dry_run=dry_run)
     else:
+        print("Requested authors:", zbmath_ids)
+        print("used url:", url)
         print(r)
 
